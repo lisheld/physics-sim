@@ -40,12 +40,17 @@ def point_bounds_distance(point,bound1,bound2): #calculates the distance between
         if (bound1[0] <= point[0] <= bound2[0]) or (bound2[0] <= point[0] <= bound1[0]):
             return abs(point[1]-bound1[1])
     else:
-        if ((bound1[1] <= point[1] <= bound2[1]) or (bound2[1] <= point[1] <= bound1[1])) and ((bound1[0] <= point[0] <= bound2[0]) or (bound2[0] <= point[0] <= bound1[0])):
-            slope = (bound2[1]-bound1[1])/(bound2[0]-bound1[0])
-            return abs(-slope*point[0]+point[1]+slope*bound1[0]-bound1[1])/sqrt(slope**2 + 1)
+        bslope = (bound2[1]-bound1[1])/(bound2[0]-bound1[0])
+        yb0 = bound1[1]-bslope*bound1[0]
+        pslope = -1/bslope
+        yp0 = point[1]-pslope*point[1]
+        xint = (yp0-yb0)/(bslope-pslope)
+        yint = bslope*xint+yb0
+        if ((bound1[1] <= yint <= bound2[1]) or (bound2[1] <= yint <= bound1[1])) and ((bound1[0] <= xint <= bound2[0]) or (bound2[0] <= xint <= bound1[0])):
+            return abs(-bslope*point[0]+point[1]+bslope*bound1[0]-bound1[1])/sqrt(bslope**2 + 1)
 
 print(point_bounds_distance((1,2), (1,3), (1,4)))
-point_bounds_distance((1,2), (1,3), (1,4)) < 4
+print(point_bounds_distance((3,3), (0,0), (2,2)))
 def accel_y(t): #put function for y-acceleration as a function of time here
     #print("accel_y") #debugging
     return -g
