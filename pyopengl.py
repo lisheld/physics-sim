@@ -8,11 +8,10 @@ import time
 w,h = 800,800
 rw,rh = 25,25
 sw,sh = w/rw,h/rh #sets the scale width and height by dividing the height in pixels by the height in meters
-print(sw,sh)
 ball = {
-"pos": [12.5,12.5],
-"vel":15,
-"angle":pi/2,
+"pos": [0,12.5],
+"vel":10,
+"angle":pi/3,
 "radius":0.3,
 "mass":0.454
 }
@@ -22,17 +21,16 @@ dt = 1/100
 t = 0
 g = 9.81
 
-4 <= 5.5 <= 11
-
 def integral(tt,func): #integral estimation
     #print(x, ha)
     return (dt/6)*(func(tt)+4*func((2*tt+dt)/2)+func(tt+dt))
 
-def second_integral(v, vf): #calculates area of triangle
+def second_integral(v, vf): #calculates area of trapezoid with base1 = v and base2 = vf
     return (v+vf/2)*dt
 
 
-def point_bounds_distance(point,bound1,bound2): #calculates the distance between a point and the line between the 2 bounds
+
+def point_bounds_distance(point,bound1,bound2): #calculates the distance between a point and the line between the 2 bounds. looks complicataed but is pretty simple point-line distance math
     if bound1[0] == bound2[0]:
         if (bound1[1] <= point[1] <= bound2[1]) or (bound2[1] <= point[1] <= bound1[1]):
             return abs(point[0]-bound1[0])
@@ -49,8 +47,6 @@ def point_bounds_distance(point,bound1,bound2): #calculates the distance between
         if ((bound1[1] <= yint <= bound2[1]) or (bound2[1] <= yint <= bound1[1])) and ((bound1[0] <= xint <= bound2[0]) or (bound2[0] <= xint <= bound1[0])):
             return abs(-bslope*point[0]+point[1]+bslope*bound1[0]-bound1[1])/sqrt(bslope**2 + 1)
 
-print(point_bounds_distance((1,2), (1,3), (1,4)))
-print(point_bounds_distance((3,3), (0,0), (2,2)))
 def accel_y(t): #put function for y-acceleration as a function of time here
     #print("accel_y") #debugging
     return -g
@@ -85,7 +81,7 @@ def create_bounds():
     for bound in bounds:
         glVertex2f(bound[0], bound[1])
     glEnd()
-
+intersect_angle = 0
 col_list = []
 def check_collision():
     global col_list, sh, ball
@@ -93,14 +89,25 @@ def check_collision():
     for i in range(len(bounds)):
         if i == len(bounds)-1:
             distance = point_bounds_distance(ball_loc[-1], bounds[i], bounds[0])
+            tempia = atan((bounds[i][1]-bounds[0][1])/(bounds[i][0]-bounds[0][0])) #need to fix here to calculate angle properly
         else:
             distance = point_bounds_distance(ball_loc[-1], bounds[i], bounds[i+1])
-        if distance <= sh*ball['radius']:
-            col_list.append(True)
-        else:
+            tempia = atan((bounds[i][1]-bounds[i+1][1])/(bounds[i][0]-bounds[i+1][0])) #need to fix here to calculate angle properly
+        try:
+            if distance <= sh*ball['radius']:
+                col_list.append(True)
+                intersect_angle = tempia
+            else:
+                col_list.append(False)
+        except:
             col_list.append(False)
 
-
+def collision_behavior():
+    global vy, vx
+    collision_angle = atan(vy/vx)
+    bounce_angle = pi - (collision_angle - intersect_angle)
+    vy = vy*sin(bounce_angle)
+    vx = vx*cos(bounce_angle)
 
 
 
@@ -128,10 +135,9 @@ def showScreen():
     update_pos()
     check_collision()
     trail(ball_loc)
+    glColor3f(1.0, 0.0, 0.0)
     if any(col_list):
-        glColor3f(0.0, 1.0, 0.0)
-    else:
-        glColor3f(1.0, 0.0, 0.0)
+        collision_behavior()
     glutSwapBuffers()
     t += dt
     time.sleep(dt)
