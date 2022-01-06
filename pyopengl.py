@@ -10,7 +10,7 @@ w,h = 800,800
 rw,rh = 25,25
 sw,sh = w/rw,h/rh #sets the scale width and height by dividing the height in pixels by the height in meters
 ball = {
-"pos": [0,12.5],
+"pos": [12.5,12.5],
 "vel":10,
 "angle":pi/3,
 "radius":0.3,
@@ -21,7 +21,8 @@ vx,vy,x,y=ball['vel']*cos(ball['angle']), ball['vel']*sin(ball['angle']), ball['
 dt = 1/100
 t = 0
 g = 9.81
-
+last_col = False
+collision = False
 def integral(tt,func): #integral estimation
     #print(x, ha)
     return (dt/6)*(func(tt)+4*func((2*tt+dt)/2)+func(tt+dt))
@@ -83,32 +84,32 @@ def create_bounds():
         glVertex2f(bound[0], bound[1])
     glEnd()
 intersect_angle = 0
-col_list = []
 def check_collision():
-    global col_list, sh, ball
-    col_list = []
+    global collision, sh, ball
+    last_col = collision
+    collision = False
     for i in range(len(bounds)):
         if i == len(bounds)-1:
             distance = point_bounds_distance(ball_loc[-1], bounds[i], bounds[0])
-            tempia = atan((bounds[i][1]-bounds[0][1])/(bounds[i][0]-bounds[0][0])) #need to fix here to calculate angle properly
+            tempia = atan2((bounds[i][1]-bounds[0][1]),(bounds[i][0]-bounds[0][0]))
         else:
             distance = point_bounds_distance(ball_loc[-1], bounds[i], bounds[i+1])
-            tempia = atan((bounds[i][1]-bounds[i+1][1])/(bounds[i][0]-bounds[i+1][0])) #need to fix here to calculate angle properly
+            tempia = atan2((bounds[i][1]-bounds[i+1][1]),(bounds[i][0]-bounds[i+1][0]))
         try:
-            if distance <= sh*ball['radius']:
-                col_list.append(True)
+            if distance <= sh*ball['radius'] and last_col == False:
+                collision = True
                 intersect_angle = tempia
-            else:
-                col_list.append(False)
+                break
         except:
-            col_list.append(False)
+            None
 
 def collision_behavior():
     global vy, vx
-    collision_angle = atan(vy/vx)
+    collision_angle = atan2(vy,vx)
     bounce_angle = pi - (collision_angle - intersect_angle)
-    vy = vy*sin(bounce_angle)
-    vx = vx*cos(bounce_angle)
+    mag = sqrt(vx**2+vy**2)
+    vy = mag*sin(bounce_angle)
+    vx = mag*cos(bounce_angle)
 
 
 
@@ -137,7 +138,7 @@ def showScreen():
     check_collision()
     trail(ball_loc)
     glColor3f(1.0, 0.0, 0.0)
-    if any(col_list):
+    if collision:
         collision_behavior()
     glutSwapBuffers()
     t += dt
