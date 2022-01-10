@@ -1,5 +1,3 @@
-#poop
-#dsdfsgdz
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -11,25 +9,30 @@ w,h = 800,800
 rw,rh = 25,25
 sw,sh = w/rw,h/rh #sets the scale width and height by dividing the height in pixels by the height in meters
 ball = {
-"pos": [12.5,12.5],
-"vel":10,
-"angle":pi/3,
+"pos": [18,6.5],
+"vel":-10,
+"angle":pi/6,
 "radius":0.3,
 "mass":0.454
 }
-bounds = [(10,10),(10,h-10),(w-10,h-10),(w-10,10)]
+#bounds = [(10,10), (10,h-10), (w-10,h-10), (w-10,10)]
+bounds = [(w/2,10),(10,h/2),(w/2,h-10),(w-10,h/2)]
 vx,vy,x,y=ball['vel']*cos(ball['angle']), ball['vel']*sin(ball['angle']), ball['pos'][0], ball['pos'][1]
-dt = 1/100
+dt = 1/200
 t = 0
 g = 9.81
 last_col = False
 collision = False
+bound_angle = None
 def integral(tt,func): #integral estimation
-    #print(x, ha)
     return (dt/6)*(func(tt)+4*func((2*tt+dt)/2)+func(tt+dt))
 
 def second_integral(v, vf): #calculates area of trapezoid with base1 = v and base2 = vf
     return (v+vf/2)*dt
+
+
+def in_between(b1,b2,p):
+    return b1 < p < b2 or b2 < p < b1
 
 
 
@@ -47,9 +50,12 @@ def point_bounds_distance(point,bound1,bound2): #calculates the distance between
         yp0 = point[1]-pslope*point[1]
         xint = (yp0-yb0)/(bslope-pslope)
         yint = bslope*xint+yb0
-        if ((bound1[1] <= yint <= bound2[1]) or (bound2[1] <= yint <= bound1[1])) and ((bound1[0] <= xint <= bound2[0]) or (bound2[0] <= xint <= bound1[0])):
-            return abs(-bslope*point[0]+point[1]+bslope*bound1[0]-bound1[1])/sqrt(bslope**2 + 1)
+        if in_between(bound1[1], bound2[1], yint) and in_between(bound1[0], bound2[0], xint):
+            return sqrt((point[1]-yint)**2+(point[0]-xint)**2)
 
+
+
+point_bounds_distance((3*w/5,h/4),(w/2,10),(w-10,h/2))
 def accel_y(t): #put function for y-acceleration as a function of time here
     #print("accel_y") #debugging
     return -g
@@ -67,7 +73,7 @@ def circle(cx, cy, r, n): #creates a circle by making a polygon with n sides whe
         alpha += da
     glEnd()
 
-ball_loc = []
+ball_loc = [ball['pos']]
 
 def update_pos(): #this function updates the position of the ball. position is updated before velocity within this function because the change in position needs to account for the previous velocity
     global x,y,vx,vy #imports global variables to function
@@ -77,42 +83,48 @@ def update_pos(): #this function updates the position of the ball. position is u
     vy += integral(t, accel_y) #updates the velocity in the y direction
     #print(sw*x,sh*y) #for debugging why the ball is in china
     ball_loc.append((sw*x,sh*y)) #stores current position in loc list
-    circle(sw*x,sh*y, sh*ball['radius'], 30) #draws a circle at the current position
+    circle(sw*x,sh*y, sh*ball['radius'], 4) #draws a circle at the current position
 
 def create_bounds():
     glBegin(GL_LINE_LOOP)
     for bound in bounds:
         glVertex2f(bound[0], bound[1])
     glEnd()
-intersect_angle = 0
+
 def check_collision():
-    global collision, sh, ball
-    last_col = collision
+    global collision, sh, ball, bound_angle, ball_loc
+    #last_col = collision
     collision = False
     for i in range(len(bounds)):
         if i == len(bounds)-1:
-            distance = point_bounds_distance(ball_loc[-1], bounds[i], bounds[0])
-            tempia = atan2((bounds[i][1]-bounds[0][1]),(bounds[i][0]-bounds[0][0]))
+            next = 0
         else:
-            distance = point_bounds_distance(ball_loc[-1], bounds[i], bounds[i+1])
-            tempia = atan2((bounds[i][1]-bounds[i+1][1]),(bounds[i][0]-bounds[i+1][0]))
+            next = i+1
+        distance = point_bounds_distance(ball_loc[-1], bounds[next], bounds[i])
+        tempba = atan2((bounds[next][1]-bounds[i][1]),(bounds[next][0]-bounds[i][0]))
         try:
-            if distance <= sh*ball['radius'] and last_col == False:
+            if distance <= sh*ball['radius']: #and last_col == False:
+                bound_angle = tempba
                 collision = True
-                intersect_angle = tempia
-                break
+                print('hit')
         except:
             None
 
+def bounce_vector(v,ba):
+    ca = atan2(v[1],v[0])
+    n = (cos(ba+pi/2),sin(ba+pi/2)) if ba<ca<pi+ba else (cos(ba-pi/2),sin(ba-pi/2))
+    u = np.multiply(n,np.dot(v,n))
+    w = np.subtract(v,u)
+    return np.subtract(w,u)
+
 def collision_behavior():
-    global vy, vx
-    collision_angle = atan2(vy,vx)
-    bounce_angle = pi - (collision_angle - intersect_angle)
-    mag = sqrt(vx**2+vy**2)
-    vy = mag*sin(bounce_angle)
-    vx = mag*cos(bounce_angle)
-
-
+    global vy, vx, bound_angle
+    vx,vy = bounce_vector((vx,vy),bound_angle)
+    #collision_angle = atan2(vy,vx)
+    #bounce_angle = 2*bound_angle - collision_angle
+    #mag = sqrt(vx**2+vy**2)
+    #vy = mag*sin(bounce_angle)
+    #vx = mag*cos(bounce_angle)
 
 def trail(list):
     glBegin(GL_POINTS)
@@ -137,13 +149,13 @@ def showScreen():
     create_bounds()
     update_pos()
     check_collision()
-    trail(ball_loc)
+    #trail(ball_loc)
     glColor3f(1.0, 0.0, 0.0)
     if collision:
         collision_behavior()
     glutSwapBuffers()
     t += dt
-    time.sleep(dt)
+    time.sleep(dt*2)
 
 
 
