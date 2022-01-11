@@ -51,11 +51,13 @@ def point_bounds_distance(point,bound1,bound2): #calculates the distance between
         xint = (yp0-yb0)/(bslope-pslope)
         yint = bslope*xint+yb0
         if in_between(bound1[1], bound2[1], yint) and in_between(bound1[0], bound2[0], xint):
-            return sqrt((point[1]-yint)**2+(point[0]-xint)**2)
+            return abs(bslope*point[0]-point[1]+yb0)/sqrt(bslope**2+1)
 
+tt1 = (450,750)
+tt2 = (50,450)
+pt = (400,300)
+point_bounds_distance(pt,tt1,tt2)
 
-
-point_bounds_distance((3*w/5,h/4),(w/2,10),(w-10,h/2))
 def accel_y(t): #put function for y-acceleration as a function of time here
     #print("accel_y") #debugging
     return -g
@@ -83,7 +85,7 @@ def update_pos(): #this function updates the position of the ball. position is u
     vy += integral(t, accel_y) #updates the velocity in the y direction
     #print(sw*x,sh*y) #for debugging why the ball is in china
     ball_loc.append((sw*x,sh*y)) #stores current position in loc list
-    circle(sw*x,sh*y, sh*ball['radius'], 4) #draws a circle at the current position
+    circle(sw*x,sh*y, sh*ball['radius'], 30) #draws a circle at the current position
 
 def create_bounds():
     glBegin(GL_LINE_LOOP)
@@ -155,7 +157,7 @@ def showScreen():
         collision_behavior()
     glutSwapBuffers()
     t += dt
-    time.sleep(dt*2)
+    time.sleep(dt)
 
 
 
