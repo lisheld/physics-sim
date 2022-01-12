@@ -24,6 +24,8 @@ g = 9.81
 last_col = False
 collision = False
 bound_angle = None
+ball_loc = [(ball['pos'][0]*sw, ball['pos'][1]*sh)]
+
 def integral(tt,func): #integral estimation
     return (dt/6)*(func(tt)+4*func((2*tt+dt)/2)+func(tt+dt))
 
@@ -38,25 +40,21 @@ def in_between(b1,b2,p):
 
 def point_bounds_distance(point,bound1,bound2): #calculates the distance between a point and the line between the 2 bounds. looks complicataed but is pretty simple point-line distance math
     if bound1[0] == bound2[0]:
-        if (bound1[1] <= point[1] <= bound2[1]) or (bound2[1] <= point[1] <= bound1[1]):
+        if in_between(point[1],bound1[1],bound2[1]):
             return abs(point[0]-bound1[0])
     elif bound1[1] == bound2[1]:
-        if (bound1[0] <= point[0] <= bound2[0]) or (bound2[0] <= point[0] <= bound1[0]):
+        if in_between(point[0],bound1[0],bound2[0]):
             return abs(point[1]-bound1[1])
     else:
         bslope = (bound2[1]-bound1[1])/(bound2[0]-bound1[0])
         yb0 = bound1[1]-bslope*bound1[0]
         pslope = -1/bslope
-        yp0 = point[1]-pslope*point[1]
+        yp0 = point[1]-pslope*point[0]
         xint = (yp0-yb0)/(bslope-pslope)
         yint = bslope*xint+yb0
         if in_between(bound1[1], bound2[1], yint) and in_between(bound1[0], bound2[0], xint):
-            return abs(bslope*point[0]-point[1]+yb0)/sqrt(bslope**2+1)
+            return sqrt((point[1]-yint)**2+(point[0]-xint)**2)
 
-tt1 = (450,750)
-tt2 = (50,450)
-pt = (400,300)
-point_bounds_distance(pt,tt1,tt2)
 
 def accel_y(t): #put function for y-acceleration as a function of time here
     #print("accel_y") #debugging
@@ -75,7 +73,6 @@ def circle(cx, cy, r, n): #creates a circle by making a polygon with n sides whe
         alpha += da
     glEnd()
 
-ball_loc = [ball['pos']]
 
 def update_pos(): #this function updates the position of the ball. position is updated before velocity within this function because the change in position needs to account for the previous velocity
     global x,y,vx,vy #imports global variables to function
@@ -108,7 +105,6 @@ def check_collision():
             if distance <= sh*ball['radius']: #and last_col == False:
                 bound_angle = tempba
                 collision = True
-                print('hit')
         except:
             None
 
@@ -122,12 +118,7 @@ def bounce_vector(v,ba):
 def collision_behavior():
     global vy, vx, bound_angle
     vx,vy = bounce_vector((vx,vy),bound_angle)
-    #collision_angle = atan2(vy,vx)
-    #bounce_angle = 2*bound_angle - collision_angle
-    #mag = sqrt(vx**2+vy**2)
-    #vy = mag*sin(bounce_angle)
-    #vx = mag*cos(bounce_angle)
-
+    
 def trail(list):
     glBegin(GL_POINTS)
     for pos in list:
