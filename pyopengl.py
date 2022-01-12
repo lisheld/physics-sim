@@ -10,13 +10,13 @@ rw,rh = 25,25
 sw,sh = w/rw,h/rh #sets the scale width and height by dividing the height in pixels by the height in meters
 ball = {
 "pos": [18,6.5],
-"vel":-10,
-"angle":pi/6,
+"vel":10,
+"angle":pi/4,
 "radius":0.3,
 "mass":0.454
 }
-#bounds = [(10,10), (10,h-10), (w-10,h-10), (w-10,10)]
-bounds = [(w/2,10),(10,h/2),(w/2,h-10),(w-10,h/2)]
+bounds = [(10,10), (10,h-10), (w-10,h-10), (w-10,10)]
+#bounds = [(w/2,10),(10,h/2),(w/2,h-10),(w-10,h/2)]
 vx,vy,x,y=ball['vel']*cos(ball['angle']), ball['vel']*sin(ball['angle']), ball['pos'][0], ball['pos'][1]
 dt = 1/200
 t = 0
@@ -25,6 +25,7 @@ last_col = False
 collision = False
 bound_angle = None
 ball_loc = [(ball['pos'][0]*sw, ball['pos'][1]*sh)]
+vert, hor = False,False
 
 def integral(tt,func): #integral estimation
     return (dt/6)*(func(tt)+4*func((2*tt+dt)/2)+func(tt+dt))
@@ -40,20 +41,23 @@ def in_between(b1,b2,p):
 
 def point_bounds_distance(point,bound1,bound2): #calculates the distance between a point and the line between the 2 bounds. looks complicataed but is pretty simple point-line distance math
     if bound1[0] == bound2[0]:
+        vert = True
         if in_between(point[1],bound1[1],bound2[1]):
             return abs(point[0]-bound1[0])
-    elif bound1[1] == bound2[1]:
-        if in_between(point[0],bound1[0],bound2[0]):
-            return abs(point[1]-bound1[1])
     else:
-        bslope = (bound2[1]-bound1[1])/(bound2[0]-bound1[0])
-        yb0 = bound1[1]-bslope*bound1[0]
-        pslope = -1/bslope
-        yp0 = point[1]-pslope*point[0]
-        xint = (yp0-yb0)/(bslope-pslope)
-        yint = bslope*xint+yb0
-        if in_between(bound1[1], bound2[1], yint) and in_between(bound1[0], bound2[0], xint):
-            return sqrt((point[1]-yint)**2+(point[0]-xint)**2)
+        if bound1[1] == bound2[1]:
+            hor = True
+            if in_between(point[0],bound1[0],bound2[0]):
+                return abs(point[1]-bound1[1])
+        else:
+            bslope = (bound2[1]-bound1[1])/(bound2[0]-bound1[0])
+            yb0 = bound1[1]-bslope*bound1[0]
+            pslope = -1/bslope
+            yp0 = point[1]-pslope*point[0]
+            xint = (yp0-yb0)/(bslope-pslope)
+            yint = bslope*xint+yb0
+            if in_between(bound1[1], bound2[1], yint) and in_between(bound1[0], bound2[0], xint):
+                return sqrt((point[1]-yint)**2+(point[0]-xint)**2)
 
 
 def accel_y(t): #put function for y-acceleration as a function of time here
@@ -92,7 +96,7 @@ def create_bounds():
 
 def check_collision():
     global collision, sh, ball, bound_angle, ball_loc
-    #last_col = collision
+    last_col = collision
     collision = False
     for i in range(len(bounds)):
         if i == len(bounds)-1:
@@ -101,12 +105,10 @@ def check_collision():
             next = i+1
         distance = point_bounds_distance(ball_loc[-1], bounds[next], bounds[i])
         tempba = atan2((bounds[next][1]-bounds[i][1]),(bounds[next][0]-bounds[i][0]))
-        try:
-            if distance <= sh*ball['radius']: #and last_col == False:
+        if distance != None:
+            if distance <= sh*ball['radius'] and last_col == False:
                 bound_angle = tempba
                 collision = True
-        except:
-            None
 
 def bounce_vector(v,ba):
     ca = atan2(v[1],v[0])
@@ -118,7 +120,7 @@ def bounce_vector(v,ba):
 def collision_behavior():
     global vy, vx, bound_angle
     vx,vy = bounce_vector((vx,vy),bound_angle)
-    
+
 def trail(list):
     glBegin(GL_POINTS)
     for pos in list:
@@ -140,12 +142,12 @@ def showScreen():
     glLoadIdentity()
     iterate()
     create_bounds()
+    if collision:
+        collision_behavior()
     update_pos()
     check_collision()
     #trail(ball_loc)
     glColor3f(1.0, 0.0, 0.0)
-    if collision:
-        collision_behavior()
     glutSwapBuffers()
     t += dt
     time.sleep(dt)
