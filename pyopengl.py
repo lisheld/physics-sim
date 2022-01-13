@@ -6,27 +6,33 @@ import numpy as np
 import pandas as pd
 import time
 w,h = 800,800
-rw,rh = 25,25
+rw,rh = 50,50
 sw,sh = w/rw,h/rh #sets the scale width and height by dividing the height in pixels by the height in meters
 ball = {
-"pos": [18,6.5],
-"vel":10,
-"angle":pi/4,
+"pos": [rw/2,rh/2],
+"vel":21,
+"angle":pi/3,
 "radius":0.3,
 "mass":0.454
 }
-bounds = [(10,10), (10,h-10), (w-10,h-10), (w-10,10)]
+bounds = []
+def polygon_bounds(center, sides, radius):
+    da = 2*pi/sides #sets the change in angle in every for loop iteration to 2pi/n
+    alpha = 0 #sets the angle to 0
+    for i in range(sides): #iterates through n times and puts a vertex that is r distance from the center and da radians from the last vertex
+        bounds.append((center[0]+cos(alpha)*radius, center[1]+sin(alpha)*radius))
+        alpha += da
+polygon_bounds((w/2,h/2),5,w/2-10)
+#bounds = [(10,10), (10,h-10), (w-10,h-10), (w-10,10)]
 #bounds = [(w/2,10),(10,h/2),(w/2,h-10),(w-10,h/2)]
 vx,vy,x,y=ball['vel']*cos(ball['angle']), ball['vel']*sin(ball['angle']), ball['pos'][0], ball['pos'][1]
-dt = 1/200
+dt = 1/300
 t = 0
 g = 9.81
-last_col = False
 collision = False
 bound_angle = None
 ball_loc = [(ball['pos'][0]*sw, ball['pos'][1]*sh)]
-vert, hor = False,False
-
+col_list = []
 def integral(tt,func): #integral estimation
     return (dt/6)*(func(tt)+4*func((2*tt+dt)/2)+func(tt+dt))
 
@@ -39,17 +45,18 @@ def in_between(b1,b2,p):
 
 
 
+
 def point_bounds_distance(point,bound1,bound2): #calculates the distance between a point and the line between the 2 bounds. looks complicataed but is pretty simple point-line distance math
     if bound1[0] == bound2[0]:
-        vert = True
-        if in_between(point[1],bound1[1],bound2[1]):
+        print('vert')
+        if in_between(bound1[1],bound2[1],point[1]):
             return abs(point[0]-bound1[0])
     else:
         if bound1[1] == bound2[1]:
-            hor = True
-            if in_between(point[0],bound1[0],bound2[0]):
+            if in_between(bound1[0],bound2[0],point[0]):
                 return abs(point[1]-bound1[1])
         else:
+            vert, hor = False,False
             bslope = (bound2[1]-bound1[1])/(bound2[0]-bound1[0])
             yb0 = bound1[1]-bslope*bound1[0]
             pslope = -1/bslope
@@ -58,7 +65,6 @@ def point_bounds_distance(point,bound1,bound2): #calculates the distance between
             yint = bslope*xint+yb0
             if in_between(bound1[1], bound2[1], yint) and in_between(bound1[0], bound2[0], xint):
                 return sqrt((point[1]-yint)**2+(point[0]-xint)**2)
-
 
 def accel_y(t): #put function for y-acceleration as a function of time here
     #print("accel_y") #debugging
@@ -95,8 +101,10 @@ def create_bounds():
     glEnd()
 
 def check_collision():
-    global collision, sh, ball, bound_angle, ball_loc
-    last_col = collision
+    global collision, sh, ball, bound_angle, ball_loc, col_list
+    col_list.append(collision)
+    if len(col_list) > 2:
+        del col_list[0]
     collision = False
     for i in range(len(bounds)):
         if i == len(bounds)-1:
@@ -106,7 +114,8 @@ def check_collision():
         distance = point_bounds_distance(ball_loc[-1], bounds[next], bounds[i])
         tempba = atan2((bounds[next][1]-bounds[i][1]),(bounds[next][0]-bounds[i][0]))
         if distance != None:
-            if distance <= sh*ball['radius'] and last_col == False:
+            if distance <= sh*ball['radius'] and not any(col_list):
+                print('hit')
                 bound_angle = tempba
                 collision = True
 
