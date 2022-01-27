@@ -22,7 +22,7 @@ def polygon_bounds(center, sides, radius):
     for i in range(sides): #iterates through n times and puts a vertex that is r distance from the center and da radians from the last vertex
         bounds.append((center[0]+cos(alpha)*radius, center[1]+sin(alpha)*radius))
         alpha += da
-polygon_bounds((w/2,h/2),5,w/2-10)
+polygon_bounds((w/2,h/2),8,w/2-10)
 #bounds = [(10,10), (10,h-10), (w-10,h-10), (w-10,10)]
 #bounds = [(w/2,10),(10,h/2),(w/2,h-10),(w-10,h/2)]
 vx,vy,x,y=ball['vel']*cos(ball['angle']), ball['vel']*sin(ball['angle']), ball['pos'][0], ball['pos'][1]
