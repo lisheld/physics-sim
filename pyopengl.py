@@ -10,7 +10,7 @@ rw,rh = 50,50
 sw,sh = w/rw,h/rh #sets the scale width and height by dividing the height in pixels by the height in meters
 ball = {
 "pos": [rw/2,rh/2],
-"vel":21,
+"vel":10,
 "angle":pi/3,
 "radius":0.3,
 "mass":0.454
@@ -33,8 +33,12 @@ collision = False
 bound_angle = None
 ball_loc = [(ball['pos'][0]*sw, ball['pos'][1]*sh)]
 col_list = []
-def integral(tt,func): #integral estimation
-    return (dt/6)*(func(tt)+4*func((2*tt+dt)/2)+func(tt+dt))
+def integral(tt,func,last): #integral estimation (currently using RK4)
+    k1 = func(tt,last)
+    k2 = func(tt*dt/2,last+dt*k1/2)
+    k3 = func(tt*dt/2,last+dt*k2/2)
+    k4 = func(tt + dt,last+dt*k3)
+    return (dt/6)*(k1+2*k2+2*k3+k4)
 
 def second_integral(v, vf): #calculates area of trapezoid with base1 = v and base2 = vf
     return (v+vf/2)*dt
@@ -66,11 +70,11 @@ def point_bounds_distance(point,bound1,bound2): #calculates the distance between
             if in_between(bound1[1], bound2[1], yint) and in_between(bound1[0], bound2[0], xint):
                 return sqrt((point[1]-yint)**2+(point[0]-xint)**2)
 
-def accel_y(t): #put function for y-acceleration as a function of time here
+def accel_y(t,vel_y): #put function for y-acceleration as a function of time here
     #print("accel_y") #debugging
     return -g
 
-def accel_x(t): #put function for x-acceleration as a function of time here
+def accel_x(t,vel_x): #put function for x-acceleration as a function of time here
     #print("accel_x") #debugging
     return 0
 
@@ -86,10 +90,10 @@ def circle(cx, cy, r, n): #creates a circle by making a polygon with n sides whe
 
 def update_pos(): #this function updates the position of the ball. position is updated before velocity within this function because the change in position needs to account for the previous velocity
     global x,y,vx,vy #imports global variables to function
-    x += second_integral(vx, vx + integral(t, accel_x)) #updates x position
-    vx += integral(t, accel_x) #updates the velocity in the x direction
-    y += second_integral(vy, vy + integral(t, accel_y)) #updates y position
-    vy += integral(t, accel_y) #updates the velocity in the y direction
+    x += second_integral(vx, vx + integral(t, accel_x, vx)) #updates x position
+    vx += integral(t, accel_x, vx) #updates the velocity in the x direction
+    y += second_integral(vy, vy + integral(t, accel_y, vy)) #updates y position
+    vy += integral(t, accel_y, vx) #updates the velocity in the y direction
     #print(sw*x,sh*y) #for debugging why the ball is in china
     ball_loc.append((sw*x,sh*y)) #stores current position in loc list
     circle(sw*x,sh*y, sh*ball['radius'], 30) #draws a circle at the current position
