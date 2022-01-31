@@ -21,16 +21,19 @@ ball = { #defines settings for ball in meters
 "pos": screen['real_dim']/2,
 "vel":np.array([15*cos(pi/6), 10*sin(pi/6)]),
 "accel":np.array([0,0]),
-"radius":0.3,
+"radius":1,
 "mass":0.454
 }
 
 
 #SETTING CONSTANTS
 
-dt = 1/100
+dt = 1/50
 t = 0
 g = 9.81
+k = 0.9 #spring constant
+mew = 0.8 #friction constant
+
 
 #DEFINING VARIOUS MATH FUNCTIONS
 
@@ -97,11 +100,12 @@ collision = False
 col_list = []
 
 def bounce_vector(v,ba):
+    global k, mew
     ca = atan2(v[1],v[0])
     n = (cos(ba+pi/2),sin(ba+pi/2)) if ba<ca<pi+ba else (cos(ba-pi/2),sin(ba-pi/2))
     u = np.multiply(n,np.dot(v,n))
     w = np.subtract(v,u)
-    return np.subtract(w,u) #coefficient of w changes friction, coefficient of u changes elasticity of ball
+    return np.subtract(mew*w,k*u)
 
 def collision_behavior(ba):
     global ball
@@ -183,6 +187,7 @@ def polygon_bounds(center, sides, radius):
 polygon_bounds(screen['dim']/2,8,screen['dim'][0]/2 - 10)
 #bounds = [(10,10), (10,h-10), (w-10,h-10), (w-10,10)]
 #bounds = [(w/2,10),(10,h/2),(w/2,h-10),(w-10,h/2)]
+
 def create_bounds():
     glBegin(GL_LINE_LOOP)
     for bound in bounds:
