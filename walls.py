@@ -22,7 +22,8 @@ ball = { #defines settings for ball in meters
 "vel":np.array([15*cos(pi/6), 10*sin(pi/6)]),
 "accel":np.array([0,0]),
 "radius":1,
-"mass":0.454
+"mass":0.454,
+"fnet":np.array([0,0])
 }
 
 
@@ -31,13 +32,13 @@ ball = { #defines settings for ball in meters
 dt = 1/50
 t = 0
 g = 9.81
-k = 0.9 #spring constant
-mew = 0.8 #friction constant
+k = 1 #spring constant
+mew = 1 #friction constant
 
 
 #DEFINING VARIOUS MATH FUNCTIONS
 
-def integral(tt,func,last): #integral estimation (currently using RK4)
+def integral(func, tt,last): #integral estimation (currently using RK4)
     k1 = func(tt,last)
     k2 = func(tt*dt/2,last+dt*k1/2)
     k3 = func(tt*dt/2,last+dt*k2/2)
@@ -71,8 +72,9 @@ def point_bounds_distance(point,bound1,bound2): #calculates the distance between
 
 #DEFINING MOVEMENT FUNCTIONS
 
-def accel(t, vel):
-    return(np.array([0,-g]))
+def force(tt,vel):
+    global ball
+    return(np.array([0,-ball['mass']*g]))
 
 def circle(cpos, r, n): #creates a circle by making a polygon with n sides where each vertex is r distance from cpos
     glBegin(GL_POLYGON) #tells OpenGL to start drawing a polygon
@@ -86,9 +88,10 @@ def circle(cpos, r, n): #creates a circle by making a polygon with n sides where
 
 def update_pos(): #this function updates the position of the ball. position is updated before velocity within this function because the change in position needs to account for the previous velocity
     global ball, ball_loc
-    ball['accel'] = integral(t,accel,ball['vel'])
-    ball['pos'] = ball['pos'] + second_integral(ball['vel'], ball['vel']+ball['accel'])
-    ball['vel'] = ball['vel'] + integral(t,accel,ball['vel'])
+    delta_v = integral(force,t,ball['vel'])/ball['mass']
+    ball['accel'] = force(t,ball['vel'])/ball['mass']
+    ball['pos'] = ball['pos'] + second_integral(ball['vel'], ball['vel']+delta_v)
+    ball['vel'] = ball['vel'] + delta_v
     if list_on:
         ball_loc = np.append(ball_loc, [screen['scale_dim']*ball['pos']], axis = 0) #stores current position in loc list
     circle(screen['scale_dim']*ball['pos'],screen['scale_dim'][0]*ball['radius'], 15)
@@ -171,7 +174,7 @@ def showScreen():
     glColor3f(1.0, 0.0, 0.0)
     glutSwapBuffers()
     t += dt
-    time.sleep(dt)
+    #time.sleep(dt)
 
 
 #DEFINING THE BOUNDS

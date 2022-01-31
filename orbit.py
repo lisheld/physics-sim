@@ -25,25 +25,26 @@ earth = {
 }
 
 moon = { #defines settings for moon in meters
-"pos": earth['pos']+3/16*screen['real_dim'],
-"vel":np.array([0,0]),
+"pos": earth['pos']+np.array([3/16*screen['real_dim'][0],0]),
+"vel":np.array([0,7000]),
 "accel":np.array([0,0]),
 "radius":1737.4*10**3,
 "mass":0.07346*10**24
 }
-
+earth['radius']
 
 #SETTING CONSTANTS
 
-dt = 1/100
+dt = 1
 t = 0
 g = 9.81
-G = 6.67430*10**(-11)
+G = 6.67430*(10**(-11))
+print(G)
 
 
 #DEFINING VARIOUS MATH FUNCTIONS
 
-def integral(tt,func,last): #integral estimation (currently using RK4)
+def integral(func,tt,last): #integral estimation (currently using RK4)
     k1 = func(tt,last)
     k2 = func(tt*dt/2,last+dt*k1/2)
     k3 = func(tt*dt/2,last+dt*k2/2)
@@ -59,12 +60,13 @@ def in_between(b1,b2,p):
 
 #DEFINING MOVEMENT FUNCTIONS
 
-def accel(t, vel):
+def force(tt,vel):
     global earth, moon, G
     r_vec = earth['pos']-moon['pos']
     mag = norm(r_vec)
     unit_vec = r_vec/mag
-    return((G*earth['mass']/(mag**2))*unit_vec)
+    #print((G*earth['mass']/(mag**2))*unit_vec)
+    return((G*earth['mass']*moon['mass']/(mag**2))*unit_vec)
 
 def circle(cpos, r, n): #creates a circle by making a polygon with n sides where each vertex is r distance from (cx,cy)
     glBegin(GL_POLYGON) #tells OpenGL to start drawing a polygon
@@ -78,9 +80,10 @@ def circle(cpos, r, n): #creates a circle by making a polygon with n sides where
 
 def update_pos(): #this function updates the position of the moon. position is updated before velocity within this function because the change in position needs to account for the previous velocity
     global moon, earth, t
-    moon['accel'] = integral(t,accel,moon['vel'])
-    moon['pos'] = moon['pos'] + second_integral(moon['vel'], moon['vel']+moon['accel'])
-    moon['vel'] = moon['vel'] + integral(t,accel,moon['vel'])
+    delta_v = integral(force,t,moon['vel'])/moon['mass']
+    moon['accel'] = force(t,moon['vel'])/moon['mass']
+    moon['pos'] = moon['pos'] + second_integral(moon['vel'], moon['vel']+delta_v)
+    moon['vel'] = moon['vel'] + delta_v
     if list_on:
         moon_loc.append(screen['scale_dim']*moon['pos']) #stores current position in loc list
     circle(screen['scale_dim']*moon['pos'],screen['scale_dim'][0]*moon['radius'], 15) #draws the moon at the current position
@@ -123,7 +126,7 @@ def showScreen():
     glColor3f(1.0, 0.0, 0.0)
     glutSwapBuffers()
     t += dt
-    time.sleep(dt)
+    #time.sleep(dt)
 
 
 #CREATING WINDOW AND DISPLAYING GRAPHICS WITH OPENGL
