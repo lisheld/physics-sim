@@ -1,5 +1,7 @@
 #IMPORTING PACKAGES
 
+import pygame as pg
+from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -14,7 +16,7 @@ import time
 
 screen = {
 "dim": np.array([800,800]), #in pixels
-"real_dim": np.array([7*6371*10**3,7*6371*10**3]), #in meters
+"real_dim": np.array([11*6371*10**3,11*6371*10**3]), #in meters
 }
 screen["scale_dim"] = screen['dim']/screen['real_dim'] #sets the scale width and height by dividing the screen dimensions by the real dimensions
 
@@ -25,8 +27,8 @@ earth = {
 }
 
 moon = { #defines settings for moon in meters
-"pos": earth['pos']+np.array([3/16*screen['real_dim'][0],0]),
-"vel":np.array([0,7000]),
+"pos": earth['pos']+np.array([1.25*6371*10**3,0]),
+"vel":np.array([0,9000]),
 "accel":np.array([0,0]),
 "radius":1737.4*10**3,
 "mass":0.07346*10**24
@@ -35,11 +37,11 @@ earth['radius']
 
 #SETTING CONSTANTS
 
-dt = 1
+dt = 0
+speed = 1000
 t = 0
 g = 9.81
 G = 6.67430*(10**(-11))
-print(G)
 
 
 #DEFINING VARIOUS MATH FUNCTIONS
@@ -84,15 +86,17 @@ def update_pos(): #this function updates the position of the moon. position is u
     moon['accel'] = force(t,moon['vel'])/moon['mass']
     moon['pos'] = moon['pos'] + second_integral(moon['vel'], moon['vel']+delta_v)
     moon['vel'] = moon['vel'] + delta_v
-    if list_on:
-        moon_loc.append(screen['scale_dim']*moon['pos']) #stores current position in loc list
-    circle(screen['scale_dim']*moon['pos'],screen['scale_dim'][0]*moon['radius'], 15) #draws the moon at the current position
+    if list_on and dt != 0:
+        if (t/dt)%100==0:
+            moon_loc.append(screen['scale_dim']*moon['pos']) #stores current position in loc list
+    earth['pos'] = screen['real_dim']/2
+    circle(screen['scale_dim']*moon['pos'],screen['scale_dim'][0]*moon['radius'], 20) #draws the moon at the current position
     circle(screen['scale_dim']*earth['pos'],screen['scale_dim'][0]*earth['radius'], 35) #draws the earth at the current position
 
 
 #DEFINING FUNCTION TO CREATE A TRAIL
 
-trail_on = False #CAUSES LOTS OF LAG IF LEFT ON FOR MORE THAN A MINUTE. DT OVER 100 CAUSES AWFUL LAG!!!! NEVER USE!!
+trail_on = True #CAUSES LOTS OF LAG IF LEFT ON FOR MORE THAN A MINUTE. DT OVER 100 CAUSES AWFUL LAG!!!! NEVER USE!!
 list_on = False #CAUSES MINOR LAG DEPENGING ON DT VALUE
 if list_on or trail_on:
     list_on = True
@@ -100,14 +104,16 @@ if list_on or trail_on:
 
 def trail(list):
     glBegin(GL_POINTS)
-    for pos in list:
-        glVertex2f(*pos)
+    for i in range(len(list)):
+        glVertex2f(*list[i])
     glEnd()
 
 
 #DEFINING FUNCTIONS FOR OPENGL TO USE
 
-def iterate():
+def gl_stupid(): #NO IDEA WHAT HALF THIS DOES! SOMETHING WITH BUFFERS AND MATRICES
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+    glLoadIdentity()
     glViewport(0, 0, *screen['dim'])
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -115,27 +121,32 @@ def iterate():
     glMatrixMode (GL_MODELVIEW)
     glLoadIdentity()
 
-def showScreen():
-    global t, dt, collision
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    glLoadIdentity()
-    iterate()
-    update_pos()
-    if trail_on:
-        trail(moon_loc)
-    glColor3f(1.0, 0.0, 0.0)
-    glutSwapBuffers()
-    t += dt
-    #time.sleep(dt)
-
 
 #CREATING WINDOW AND DISPLAYING GRAPHICS WITH OPENGL
 
-glutInit()
-glutInitDisplayMode(GLUT_RGBA)
-glutInitWindowSize(*screen['dim'])
-glutInitWindowPosition(0, 0)
-wind = glutCreateWindow("Physics Sim")
-glutDisplayFunc(showScreen)
-glutIdleFunc(showScreen)
-glutMainLoop()
+def main():
+    global t, dt, screen, speed
+    pg.init()
+    pg.display.set_mode(tuple(screen['dim']), DOUBLEBUF|OPENGL)
+    clock = pg.time.Clock()
+    zoom = 0
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                quit()
+            if event.type == pg.MOUSEWHEEL:
+                zoom = event.y
+                #screen['real_dim'] = screen['real_dim']*(1-zoom*0.25)
+        gl_stupid()
+        update_pos()
+        if trail_on:
+            trail(moon_loc)
+        glColor3f(1.0, 0.0, 0.0)
+        dt = speed*clock.tick()/1000
+        fps = (1/dt if dt != 0 else 0)
+        pg.display.flip()
+        t += dt
+
+if __name__ == "__main__":
+    main()

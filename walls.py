@@ -1,5 +1,7 @@
 #IMPORTING PACKAGES
 
+import pygame as pg
+from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -29,7 +31,8 @@ ball = { #defines settings for ball in meters
 
 #SETTING CONSTANTS
 
-dt = 1/50
+dt = 0
+speed = 3
 t = 0
 g = 9.81
 k = 1 #spring constant
@@ -138,7 +141,7 @@ def check_collision():
 
 #DEFINING FUNCTION TO CREATE A TRAIL
 
-trail_on = False #CAUSES LOTS OF LAG IF LEFT ON FOR MORE THAN A MINUTE. DT OVER 100 CAUSES AWFUL LAG!!!! NEVER USE!!
+trail_on = True #CAUSES LOTS OF LAG IF LEFT ON FOR MORE THAN A MINUTE. DT OVER 100 CAUSES AWFUL LAG!!!! NEVER USE!!
 list_on = False #CAUSES MINOR LAG DEPENGING ON DT VALUE
 if list_on or trail_on:
     list_on = True
@@ -153,28 +156,15 @@ def trail(list):
 
 #DEFINING FUNCTIONS FOR OPENGL TO USE
 
-def iterate():
+def gl_stupid(): #NO IDEA WHAT HALF THIS DOES! SOMETHING WITH BUFFERS AND MATRICES
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+    glLoadIdentity()
     glViewport(0, 0, *screen['dim'])
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glOrtho(0.0, screen['dim'][0], 0.0, screen['dim'][1], 0.0, 1.0)
     glMatrixMode (GL_MODELVIEW)
     glLoadIdentity()
-
-def showScreen():
-    global t, dt
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    glLoadIdentity()
-    iterate()
-    create_bounds()
-    check_collision()
-    update_pos()
-    if trail_on:
-        trail(ball_loc)
-    glColor3f(1.0, 0.0, 0.0)
-    glutSwapBuffers()
-    t += dt
-    #time.sleep(dt)
 
 
 #DEFINING THE BOUNDS
@@ -198,13 +188,29 @@ def create_bounds():
     glEnd()
 
 
-#CREATING WINDOW AND DISPLAYING GRAPHICS WITH OPENGL
+#CREATING WINDOW AND DISPLAYING GRAPHICS WITH PYGAME + OPENGL
 
-glutInit()
-glutInitDisplayMode(GLUT_RGBA)
-glutInitWindowSize(*screen['dim'])
-glutInitWindowPosition(0, 0)
-wind = glutCreateWindow("Physics Sim")
-glutDisplayFunc(showScreen)
-glutIdleFunc(showScreen)
-glutMainLoop()
+def main():
+    global t, dt, screen
+    pg.init()
+    pg.display.set_mode(tuple(screen['dim']), DOUBLEBUF|OPENGL)
+    clock = pg.time.Clock()
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                quit()
+        gl_stupid()
+        create_bounds()
+        check_collision()
+        update_pos()
+        if trail_on:
+            trail(ball_loc)
+        glColor3f(1.0, 0.0, 0.0)
+        dt = speed*clock.tick()/1000
+        fps = (1/dt if dt != 0 else 0)
+        pg.display.flip()
+        t += dt
+
+if __name__ == "__main__":
+    main()
