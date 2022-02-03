@@ -21,7 +21,7 @@ screen["scale_dim"] = screen['dim']/screen['real_dim'] #sets the scale width and
 
 ball = { #defines settings for ball in meters
 "pos": screen['real_dim']/2,
-"vel":np.array([15*cos(pi/6), 10*sin(pi/6)]),
+"vel":np.array([15*cos(pi/6), 15*sin(pi/6)]),
 "accel":np.array([0,0]),
 "radius":1,
 "mass":0.454,
@@ -32,7 +32,7 @@ ball = { #defines settings for ball in meters
 #SETTING CONSTANTS
 
 dt = 0
-speed = 3
+speed = 0.5
 t = 0
 g = 9.81
 k = 1 #spring constant
@@ -108,10 +108,13 @@ col_list = []
 def bounce_vector(v,ba):
     global k, mew
     ca = atan2(v[1],v[0])
-    n = (cos(ba+pi/2),sin(ba+pi/2)) if ba<ca<pi+ba else (cos(ba-pi/2),sin(ba-pi/2))
-    u = np.multiply(n,np.dot(v,n))
-    w = np.subtract(v,u)
-    return np.subtract(mew*w,k*u)
+    n = np.array([cos(ba+pi/2),sin(ba+pi/2)]) if ba<ca<pi+ba else np.array([cos(ba-pi/2),sin(ba-pi/2)])
+    u = n*np.dot(v,n)
+    w = v - u
+    return(mew*w-k*u)
+    # u = np.multiply(n,np.dot(v,n))
+    # w = np.subtract(v,u)
+    # return np.subtract(mew*w,k*u)
 
 def collision_behavior(ba):
     global ball
@@ -120,9 +123,10 @@ def collision_behavior(ba):
 def check_collision():
     global collision, ball, col_list
     col_list.append(collision)
-    if len(col_list) > 3:
+    if len(col_list) > 2:
         del col_list[0]
     collision = False
+    current_cols = 0
     for i in range(len(bounds)):
         if i == len(bounds)-1:
             next = 0
@@ -187,11 +191,11 @@ def create_bounds():
         glVertex2f(*bound)
     glEnd()
 
-
+np.array([1,2])-(1,2)
 #CREATING WINDOW AND DISPLAYING GRAPHICS WITH PYGAME + OPENGL
 
 def main():
-    global t, dt, screen
+    global t, dt, screen, ball
     pg.init()
     pg.display.set_mode(tuple(screen['dim']), DOUBLEBUF|OPENGL)
     clock = pg.time.Clock()
@@ -200,6 +204,10 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 quit()
+            if event.type == pg.MOUSEBUTTONUP:
+                actual_loc = np.array([event.pos[0],screen['dim'][1] - event.pos[1]])
+                ball['accel'] = (force(t, ball['vel'])/ball['mass'])
+                ball['vel'] = (actual_loc/screen['scale_dim'] - ball['pos']) - 0.5 * ball['accel']
         gl_stupid()
         create_bounds()
         check_collision()
