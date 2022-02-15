@@ -32,7 +32,7 @@ ball = { #defines settings for ball in meters
 #SETTING CONSTANTS
 
 dt = 0
-speed = 0.5
+speed = 1
 t = 0
 g = 9.81
 k = 1 #spring constant
@@ -145,7 +145,7 @@ def check_collision():
 
 #DEFINING FUNCTION TO CREATE A TRAIL
 
-trail_on = True #CAUSES LOTS OF LAG IF LEFT ON FOR MORE THAN A MINUTE. DT OVER 100 CAUSES AWFUL LAG!!!! NEVER USE!!
+trail_on = False #CAUSES LOTS OF LAG IF LEFT ON FOR MORE THAN A MINUTE. DT OVER 100 CAUSES AWFUL LAG!!!! NEVER USE!!
 list_on = False #CAUSES MINOR LAG DEPENGING ON DT VALUE
 if list_on or trail_on:
     list_on = True

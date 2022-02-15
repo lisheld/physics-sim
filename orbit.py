@@ -27,8 +27,8 @@ earth = {
 }
 
 moon = { #defines settings for moon in meters
-"pos": earth['pos']+np.array([1.25*6371*10**3,0]),
-"vel":np.array([0,9000]),
+"pos": earth['pos']+np.array([1.5*earth['radius'],0]),
+"vel":np.array([0,7000]),
 "accel":np.array([0,0]),
 "radius":1737.4*10**3,
 "mass":0.07346*10**24
@@ -103,7 +103,7 @@ if list_on or trail_on:
     moon_loc = [moon['pos']*screen['scale_dim']]
 
 def trail(list):
-    glBegin(GL_POINTS)
+    glBegin(GL_LINES)
     for i in range(len(list)):
         glVertex2f(*list[i])
     glEnd()
