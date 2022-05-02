@@ -19,7 +19,7 @@ screen = {
 }
 screen["scale_dim"] = screen['dim']/screen['real_dim'] #sets the scale width and height by dividing the screen dimensions by the real dimensions
 
-ball = { #defines settings for ball in meters
+ball = { #defines settings for ball in SI units
 "pos": screen['real_dim']/2,
 "vel":np.array([15*cos(pi/6), 15*sin(pi/6)]),
 "accel":np.array([0,0]),
@@ -32,10 +32,10 @@ ball = { #defines settings for ball in meters
 #SETTING CONSTANTS
 
 dt = 0
-speed = 0.5
+speed = 1
 t = 0
 g = 9.81
-k = 1 #spring constant
+elastic = 1 #spring constant
 mew = 1 #friction constant
 
 
@@ -106,15 +106,12 @@ collision = False
 col_list = []
 
 def bounce_vector(v,ba):
-    global k, mew
+    global elastic, mew
     ca = atan2(v[1],v[0])
     n = np.array([cos(ba+pi/2),sin(ba+pi/2)]) if ba<ca<pi+ba else np.array([cos(ba-pi/2),sin(ba-pi/2)])
     u = n*np.dot(v,n)
     w = v - u
-    return(mew*w-k*u)
-    # u = np.multiply(n,np.dot(v,n))
-    # w = np.subtract(v,u)
-    # return np.subtract(mew*w,k*u)
+    return(mew*w-elastic*u)
 
 def collision_behavior(ba):
     global ball
@@ -123,7 +120,7 @@ def collision_behavior(ba):
 def check_collision():
     global collision, ball, col_list
     col_list.append(collision)
-    if len(col_list) > 2:
+    if len(col_list) > 6:
         del col_list[0]
     collision = False
     current_cols = 0
@@ -145,7 +142,7 @@ def check_collision():
 
 #DEFINING FUNCTION TO CREATE A TRAIL
 
-trail_on = True #CAUSES LOTS OF LAG IF LEFT ON FOR MORE THAN A MINUTE. DT OVER 100 CAUSES AWFUL LAG!!!! NEVER USE!!
+trail_on = False #CAUSES LOTS OF LAG IF LEFT ON FOR MORE THAN A MINUTE. DT OVER 100 CAUSES AWFUL LAG!!!! NEVER USE!!
 list_on = False #CAUSES MINOR LAG DEPENGING ON DT VALUE
 if list_on or trail_on:
     list_on = True
@@ -204,7 +201,7 @@ def main():
             if event.type == pg.QUIT:
                 pg.quit()
                 quit()
-            if event.type == pg.MOUSEBUTTONUP:
+            if event.type == pg.MOUSEBUTTONDOWN:
                 actual_loc = np.array([event.pos[0],screen['dim'][1] - event.pos[1]])
                 ball['accel'] = (force(t, ball['vel'])/ball['mass'])
                 ball['vel'] = (actual_loc/screen['scale_dim'] - ball['pos']) - 0.5 * ball['accel']
